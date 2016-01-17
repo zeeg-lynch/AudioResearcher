@@ -20,6 +20,9 @@ import java.util.List;
  * Created by dmytrocherednyk on 15.01.16.
  */
 public class MusicReader extends Application {
+
+    static byte[] audio;
+
     public static void main(String[] args) {
 
 
@@ -27,7 +30,7 @@ public class MusicReader extends Application {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         FileInputStream input = null;
 
-        File mp3 = new File("Fit For Rivals - Crash.mp3");
+        File mp3 = new File("7 Life - Don Abandons Alice.mp3");
         try {
                 input = new FileInputStream(mp3);
             int len;
@@ -44,7 +47,7 @@ public class MusicReader extends Application {
         }
 
         // FFT code below ...
-        byte audio[] = out.toByteArray();
+        audio = out.toByteArray();
         // ...
 
 //        for (byte b : audio) {
@@ -85,7 +88,7 @@ public class MusicReader extends Application {
             e.printStackTrace();
         }*/
 
-        drawHistogram(audio);
+
         launch(args);
 
     }
@@ -94,39 +97,31 @@ public class MusicReader extends Application {
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Drawing Operations Test");
         Group root = new Group();
-        Canvas canvas = new Canvas(300, 250);
+
+        Canvas canvas = new Canvas(1000, 255);
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        drawShapes(gc);
+        drawHistogram(audio,gc);
         root.getChildren().add(canvas);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
     }
 
-    private static byte getMaxOfByteArray(byte[] array) {
-        if (array.length==0) {
-            throw new ArrayIndexOutOfBoundsException("THE ARRAY IS EMPTY, LOL");
-        }
-        byte max = array[0];
-        for (int i = 1; i < array.length-1; i++) {
-            max = (max>array[i])?max:array[i];
-        }
-        return max;
-    }
 
-    private static byte getMinOfByteArray(byte[] array) {
-        if (array.length==0) {
-            throw new ArrayIndexOutOfBoundsException("THE ARRAY IS EMPTY, LOL");
-        }
-        byte min = array[0];
-        for (int i = 1; i < array.length-1; i++) {
-            min = (min<array[i])?min:array[i];
-        }
-        return min;
-    }
 
-    private static void drawHistogram(byte[] bytes) {
-        System.out.println("MAX: " + getMaxOfByteArray(bytes));
-        System.out.println("MIN: " + getMinOfByteArray(bytes));
+    private static void drawHistogram(byte[] bytes, GraphicsContext gc) {
+        double xCoord = 0;
+        int step = bytes.length/1000;
+//        int step = 1;
+            gc.setFill(Color.BLACK);
+        gc.setStroke(Color.GREEN);
+        gc.setLineWidth(1);
+        for (int i = 0; i < bytes.length-step; i+=step) {
+//        for (int i = 0; i < 1000; i+=step) {
+            gc.strokeLine(xCoord,bytes[i]+127,xCoord+1,bytes[i+step]+127);
+            System.out.println(bytes[i]);
+            xCoord++;
+        }
+//        gc.strokeLine(0,0,100,50);
     }
 
     private void drawShapes(GraphicsContext gc) {
