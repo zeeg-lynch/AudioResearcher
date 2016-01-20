@@ -15,13 +15,15 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by dmytrocherednyk on 15.01.16.
  */
 public class MusicReader extends Application {
 
-    static byte[] audio;
+    private static byte[] audio;
+    private static Random random = new Random();
 
     public static void main(String[] args) {
 
@@ -88,8 +90,16 @@ public class MusicReader extends Application {
             e.printStackTrace();
         }*/
 
+        try {
+            createResizedAudioFromByteArray(audio, 0.5);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        launch(args);
+        
+
+
+//        launch(args);
 
     }
 
@@ -145,5 +155,28 @@ public class MusicReader extends Application {
                 new double[]{210, 210, 240, 240}, 4);
         gc.strokePolyline(new double[]{110, 140, 110, 140},
                 new double[]{210, 210, 240, 240}, 4);
+    }
+
+    private static void createAudioFromByteArray(byte[] array) throws IOException {
+        File f = new File(String.valueOf(random.nextInt())+".mp3");
+        f.createNewFile();
+        FileOutputStream fos = new FileOutputStream(f);
+        fos.write(array);
+        fos.flush();
+        fos.close();
+    }
+
+    private static void createResizedAudioFromByteArray(byte[] array, double resizeCoeff) throws IOException {
+        if (resizeCoeff>0 || resizeCoeff<1) {
+            byte[] newByteArray = new byte[array.length];
+            for (int i = 0; i < newByteArray.length; i++) {
+                newByteArray[i] = (byte) (array[i]*resizeCoeff);
+
+            }
+            createAudioFromByteArray(newByteArray);
+        }
+        else {
+            System.out.println("ResizeCoeff should be between 0 and 1!");
+        }
     }
 }
