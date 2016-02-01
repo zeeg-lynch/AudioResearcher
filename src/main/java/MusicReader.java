@@ -61,12 +61,31 @@ public class MusicReader extends Application {
         System.out.println(audio.length);
 
 
+        byte[] firstPartOfAudio = Arrays.copyOfRange(audio, 0, 4096);
+        System.out.println(firstPartOfAudio.length);
 
-            double[] FFTResult = FFT(cutTheHeader(audio));
+
+
+//            double[] FFTResult = FFT(cutTheHeader(audio));
             /*System.out.println("PRINITNG THE FFT RESULT:");
             for (double v : FFTResult) {
                 System.out.print(v + "\t");
             }*/
+
+
+        int sum = 0;
+        for (byte b : firstPartOfAudio) {
+            sum+=b;
+        }
+
+        System.out.println("SUM: " + sum);
+
+
+        Complex[] fftRes = FFT.fft(byteToComplex(firstPartOfAudio));
+        for (Complex complexNumb : fftRes) {
+            System.out.println(complexNumb.toString());
+        }
+        System.out.println(fftRes.length);
 
 
         /*System.out.println("Running");
@@ -114,6 +133,23 @@ public class MusicReader extends Application {
 
     }
 
+
+
+    private static Complex[] doubleToComplex(double[] array) {
+        Complex[] result = new Complex[array.length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = new Complex(array[i], 0);
+        }
+        return result;
+    }
+
+    private static Complex[] byteToComplex(byte[] array) {
+        Complex[] result = new Complex[array.length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = new Complex(array[i], 0);
+        }
+        return result;
+    }
 
 
 
@@ -279,7 +315,7 @@ public class MusicReader extends Application {
 
     private static double[] FFT(byte[] byteArray) {
         System.out.println("STARTING THE FFT");
-        int chunkSize = 4096;
+        int chunkSize = 512;
         System.out.println("Initial array size: " + byteArray.length);
         double[] resultingArray = new double[(byteArray.length/chunkSize)*chunkSize];
         System.out.println("Resulting array size: " + resultingArray.length);
@@ -443,4 +479,106 @@ public class MusicReader extends Application {
         }
         return k;
     }
+
+
+
+
+   /* *//**
+     *http://knowm.org/exploring-bird-song-with-a-spectrogram-in-java/
+     * *//*
+
+    private void buildSpectrogram() {
+
+        short[] amplitudes = wave.getSampleAmplitudes();
+        int numSamples = amplitudes.length;
+
+        int pointer = 0;
+
+        // overlapping
+        if (overlapFactor > 1) {
+
+            int numOverlappedSamples = numSamples * overlapFactor;
+            int backSamples = fftSampleSize * (overlapFactor - 1) / overlapFactor;
+            int fftSampleSize_1 = fftSampleSize - 1;
+            short[] overlapAmp = new short[numOverlappedSamples];
+            pointer = 0;
+            for (int i = 0; i < amplitudes.length; i++) {
+                overlapAmp[pointer++] = amplitudes[i];
+                if (pointer % fftSampleSize == fftSampleSize_1) {
+                    // overlap
+                    i -= backSamples;
+                }
+            }
+            numSamples = numOverlappedSamples;
+            amplitudes = overlapAmp;
+        }
+
+        numFrames = numSamples / fftSampleSize;
+        framesPerSecond = (int) (numFrames / wave.getLengthInSeconds());
+
+        // set signals for fft
+        WindowFunction window = new WindowFunction();
+        double[] win = window.generate(WindowType.HAMMING, fftSampleSize);
+
+        double[][] signals = new double[numFrames][];
+        for (int f = 0; f < numFrames; f++) {
+            signals[f] = new double[fftSampleSize];
+            int startSample = f * fftSampleSize;
+            for (int n = 0; n < fftSampleSize; n++) {
+                signals[f][n] = amplitudes[startSample + n] * win[n];
+            }
+        }
+
+        absoluteSpectrogram = new double[numFrames][];
+        // for each frame in signals, do fft on it
+        FastFourierTransform fft = new FastFourierTransform();
+        for (int i = 0; i < numFrames; i++) {
+            absoluteSpectrogram[i] = fft.getMagnitudes(signals[i]);
+        }
+
+        if (absoluteSpectrogram.length > 0) {
+
+            numFrequencyUnit = absoluteSpectrogram[0].length;
+            frequencyBinSize = (double) wave.getWaveHeader().getSampleRate() / 2 / numFrequencyUnit; // frequency could be caught within the half of
+            // nSamples according to Nyquist theory
+            frequencyRange = wave.getWaveHeader().getSampleRate() / 2;
+
+            // normalization of absoultSpectrogram
+            spectrogram = new double[numFrames][numFrequencyUnit];
+
+            // set max and min amplitudes
+            double maxAmp = Double.MIN_VALUE;
+            double minAmp = Double.MAX_VALUE;
+            for (int i = 0; i < numFrames; i++) {
+                for (int j = 0; j < numFrequencyUnit; j++) {
+                    if (absoluteSpectrogram[i][j] > maxAmp) {
+                        maxAmp = absoluteSpectrogram[i][j];
+                    }
+                    else if (absoluteSpectrogram[i][j] < minAmp) {
+                        minAmp = absoluteSpectrogram[i][j];
+                    }
+                }
+            }
+
+            // normalization
+            // avoiding divided by zero
+            double minValidAmp = 0.00000000001F;
+            if (minAmp == 0) {
+                minAmp = minValidAmp;
+            }
+
+            double diff = Math.log10(maxAmp / minAmp); // perceptual difference
+            for (int i = 0; i < numFrames; i++) {
+                for (int j = 0; j < numFrequencyUnit; j++) {
+                    if (absoluteSpectrogram[i][j] < minValidAmp) {
+                        spectrogram[i][j] = 0;
+                    }
+                    else {
+                        spectrogram[i][j] = (Math.log10(absoluteSpectrogram[i][j] / minAmp)) / diff;
+                        // System.out.println(spectrogram[i][j]);
+                    }
+                }
+            }
+        }
+    }*/
 }
