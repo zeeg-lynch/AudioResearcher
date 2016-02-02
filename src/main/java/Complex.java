@@ -32,6 +32,8 @@
  * http://introcs.cs.princeton.edu/java/97data/Complex.java.html
  ******************************************************************************/
 
+
+
 public class Complex {
     private final double re;   // the real part
     private final double im;   // the imaginary part
@@ -132,6 +134,7 @@ public class Complex {
         Complex sum = new Complex(real, imag);
         return sum;
     }
+
 
 
 

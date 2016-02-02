@@ -1,5 +1,3 @@
-import com.google.common.primitives.Bytes;
-import com.google.common.primitives.Chars;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -8,16 +6,15 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;
 import javafx.stage.Stage;
-import javafx.util.converter.ByteStringConverter;
 
 import javax.sound.sampled.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Random;
+
+import static java.lang.Math.*;
 
 /**
  * Created by dmytrocherednyk on 15.01.16.
@@ -26,15 +23,106 @@ public class MusicReader extends Application {
 
     private static byte[] audio;
     private static Random random = new Random();
+    private static final int samplingFreq = 44100; //default sampling frequency
+    private static final int chunkSize = 1024; //size of chunk of data for input to FFT (should be a power of 2)
+    private static final double verticalZoom = 0.004;
+    private static SpectrumPoint[][] spectrogram = new SpectrumPoint[2000][];
+    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
+    private static double sliceBorder = 0.5;
+//    private static String fileName = "Fit For Rivals - Crash.mp3";
+
+
+    private static class SpectrumPoint {
+        private double re;
+        private double im;
+        private double amplitude;
+        private int relativeFrequency;
+        private double frequency;
+        private double normalizedAmplitude;
+        int time;
+        Color color;
+
+        public SpectrumPoint(Complex complex, int relativeFrequency, int time) {
+            re = complex.re();
+            im = complex.im();
+            amplitude = getAmplitude();
+            normalizedAmplitude = getAmplitudeInvolvingPhase(verticalZoom);
+            this.relativeFrequency = relativeFrequency;
+            this.frequency = getRealFrequencyFromRelative(relativeFrequency);
+            this.time = time;
+            this.color = getAmplitudeColorRepresentation();
+//            this.color = getAmplitudeFullColorRepresentation();
+//            this.color = new Color(1,0,0,0.5);
+        }
+
+        private double getRealFrequencyFromRelative(int relativeFrequency) {
+            return relativeFrequency*samplingFreq/chunkSize;
+        }
+
+        public double getAmplitude() {
+            return sqrt(re*re + im*im);
+        }
+
+        public double getAmplitudeInvolvingPhase(double verticalZoom) {
+//        const float value	= (log10f( sqrtf( (realValue * realValue) + (imagValue * imagValue) ) * rcpVerticalZoom ) + 1.0f) * 0.5f;
+            return log10(sqrt(re*re + im*im)*verticalZoom)*0.5;
+        }
+
+    /*public double getFrequency() {
+//        sqrt( (realValue * realValue) + (imagValue * imagValue) );
+
+    }*/
+        private Color getAmplitudeColorRepresentation() {
+            double amplitudeForOperation = normalizedAmplitude;
+            amplitudeForOperation = abs(amplitudeForOperation);
+            if (amplitudeForOperation > 1) {
+                amplitudeForOperation = 1;
+            }
+            try {
+                return (amplitudeForOperation < sliceBorder) ? new Color(0,amplitudeForOperation,0,1) : new Color(1,0,0,1);
+            }
+            catch (IllegalArgumentException e) {
+                System.err.println(e.toString());
+                System.err.println("AMPLITUDE IS : " + amplitude);
+            }
+            return new Color(1,0,0,0);
+        }
+
+        private Color getAmplitudeFullColorRepresentation() {
+            double red;
+            double green;
+            double blue;
+            double amplitudeForOperation = normalizedAmplitude;
+            amplitudeForOperation = abs(amplitudeForOperation);
+            if (amplitudeForOperation > 1) {
+                amplitudeForOperation = 1;
+            }
+            red = (amplitudeForOperation>0.333) ? 1 : amplitudeForOperation*3;
+            green = (amplitudeForOperation>0.666) ? 1 : amplitudeForOperation*1.5;
+            blue = amplitudeForOperation;
+            return new Color(red,green,blue,1);
+        }
+
+        @Override
+        public String toString() {
+            return "SpectrumPoint{" +
+                    "re=" + re +
+                    ", im=" + im +
+                    ", amplitude=" + amplitude +
+                    ", frequency=" + frequency +
+                    ", normalizedAmplitude=" + normalizedAmplitude +
+                    ", time=" + time +
+                    ", color=" + color +
+                    '}';
+        }
+    }
 
     public static void main(String[] args) {
-
-
         byte tempBuffer[] = new byte[10000];
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         FileInputStream input = null;
 
-        File mp3 = new File("Fit For Rivals - Crash.mp3");
+        File mp3 = new File(fileName);
         try {
                 input = new FileInputStream(mp3);
             int len;
@@ -61,31 +149,65 @@ public class MusicReader extends Application {
         System.out.println(audio.length);
 
 
-        byte[] firstPartOfAudio = Arrays.copyOfRange(audio, 0, 4096);
-        System.out.println(firstPartOfAudio.length);
+
+        int curIndex = 0;
+        byte[] currentChunk;
+
+        for (int chunks = 0; chunks < spectrogram.length; chunks++) {
+
+            currentChunk = Arrays.copyOfRange(audio, curIndex, curIndex+chunkSize);
+            curIndex += chunkSize;
+    //        System.out.println(currentChunk.length);
 
 
 
-//            double[] FFTResult = FFT(cutTheHeader(audio));
-            /*System.out.println("PRINITNG THE FFT RESULT:");
-            for (double v : FFTResult) {
-                System.out.print(v + "\t");
+    //            double[] FFTResult = FFT(cutTheHeader(audio));
+                /*System.out.println("PRINITNG THE FFT RESULT:");
+                for (double v : FFTResult) {
+                    System.out.print(v + "\t");
+                }*/
+
+
+            int sum = 0;
+            for (byte b : currentChunk) {
+                sum+=b;
+            }
+
+            System.out.println("SUM: " + sum);
+
+
+            Complex[] fftRes = FFT.fft(byteToComplex(currentChunk));
+            /*for (Complex complexNumb : fftRes) {
+                System.out.println(complexNumb.toString());
             }*/
 
-
-        int sum = 0;
-        for (byte b : firstPartOfAudio) {
-            sum+=b;
+            SpectrumPoint[] spectrum = new SpectrumPoint[fftRes.length];
+            double maxAmplitudeInvolvingPhase = 0;
+            int maxAmplitudeIndex = 0;
+            double maxFreq = 0;
+            for (int i = 0; i < fftRes.length; i++) {
+                spectrum[i] = new SpectrumPoint(fftRes[i], i, chunks);
+                /*double amplitudeInvolvingPhase = fftRes[i].getAmplitudeInvolvingPhase(verticalZoom);
+    //            System.out.println("Frequency: " + getFrequencyFromIndex(i, samplingFreq, chunkSize) + "; Value: " + fftRes[i].toString());
+                System.out.println("================================\nFrequency: " + getFrequencyFromIndex(i, samplingFreq, chunkSize)
+                        + "\nAmplitude: " + fftRes[i].getAmplitude()
+                        +  "\nNormalized Amplitude with Phase: " + amplitudeInvolvingPhase);*/
+                System.out.println(spectrum[i].toString() + "\n=========================\n");
+                if (maxAmplitudeInvolvingPhase < spectrum[i].normalizedAmplitude) {
+                    maxAmplitudeInvolvingPhase = spectrum[i].normalizedAmplitude;
+                    maxAmplitudeIndex = i;
+                }
+                if (maxFreq < spectrum[i].frequency) {
+                    maxFreq = spectrum[i].frequency;
+                }
+            }
+            spectrogram[chunks] = spectrum;
+            System.out.println("MAX AMPLITUDE INVOLVING PHASE: " + maxAmplitudeInvolvingPhase);
+            System.out.println("MAX AMPLITUDE IN DB: " + spectrum[maxAmplitudeIndex].getAmplitude());
+            System.out.println("MAX FREQUENCY IN HZ: " + maxFreq);
+            System.out.println(fftRes.length);
         }
 
-        System.out.println("SUM: " + sum);
-
-
-        Complex[] fftRes = FFT.fft(byteToComplex(firstPartOfAudio));
-        for (Complex complexNumb : fftRes) {
-            System.out.println(complexNumb.toString());
-        }
-        System.out.println(fftRes.length);
 
 
         /*System.out.println("Running");
@@ -124,12 +246,12 @@ public class MusicReader extends Application {
             createResizedAudioFromByteArray(audio, 0.5);
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
 
         
 
 
-        launch(args);*/
+        launch(args);
 
     }
 
@@ -156,15 +278,21 @@ public class MusicReader extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        primaryStage.setTitle("Drawing Operations Test");
+        primaryStage.setTitle("Music spectral analyzer");
         Group root = new Group();
-
-        Canvas canvas = new Canvas(1000, 255);
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        drawHistogram(audio,gc);
-        root.getChildren().add(canvas);
+        //time domain
+        /*Canvas timeDomainCanvas = new Canvas(1000, 255);
+        GraphicsContext gc = timeDomainCanvas.getGraphicsContext2D();
+        drawTimeDomain(audio,gc);
+        root.getChildren().add(timeDomainCanvas);*/
+        //spectrogram
+        Canvas spectrogramCanvas = new Canvas(spectrogram.length, chunkSize+1);
+        GraphicsContext spectrogramGraphicsContext = spectrogramCanvas.getGraphicsContext2D();
+        drawSpectrogram(spectrogram,spectrogramGraphicsContext);
+        root.getChildren().add(spectrogramCanvas);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
+        System.out.println("SPECTROGRAM IS SHOWN");
     }
 
     static double[] readFully(File file)
@@ -230,21 +358,6 @@ public class MusicReader extends Application {
 
 
 
-    private static void drawHistogram(byte[] bytes, GraphicsContext gc) {
-        double xCoord = 0;
-        int step = bytes.length/1000;
-//        int step = 1;
-            gc.setFill(Color.BLACK);
-        gc.setStroke(Color.GREEN);
-        gc.setLineWidth(1);
-        for (int i = 0; i < bytes.length-step; i+=step) {
-//        for (int i = 0; i < 1000; i+=step) {
-            gc.strokeLine(xCoord,bytes[i]+127,xCoord+1,bytes[i+step]+127);
-            System.out.println(bytes[i]);
-            xCoord++;
-        }
-//        gc.strokeLine(0,0,100,50);
-    }
 
     private void drawShapes(GraphicsContext gc) {
         gc.setFill(Color.GREEN);
@@ -338,29 +451,7 @@ public class MusicReader extends Application {
         return fft(doubles, new double[doubles.length], true);
     }
 
-    private void provideSpectrumAnalisys(double[] results) {
-        /*for(int i = 0; i < results.length; i++) {
-            int freq = 1;
-            for(int line = 1; line < size; line++) {
-                // To get the magnitude of the sound at a given frequency slice
-                // get the abs() from the complex number.
-                // In this case I use Math.log to get a more managable number (used for color)
-                double magnitude = Math.log(results[i][freq].abs()+1);
 
-                // The more blue in the color the more intensity for a given frequency point:
-                g2d.setColor(new Color(0,(int)magnitude*10,(int)magnitude*20));
-                // Fill:
-                g2d.fillRect(i*blockSizeX, (size-line)*blockSizeY,blockSizeX,blockSizeY);
-
-                // I used a improviced logarithmic scale and normal scale:
-                if (logModeEnabled && (Math.log10(line) * Math.log10(line)) > 1) {
-                    freq += (int) (Math.log10(line) * Math.log10(line));
-                } else {
-                    freq++;
-                }
-            }
-        }*/
-    }
 
 
 
@@ -506,7 +597,7 @@ public class MusicReader extends Application {
                 overlapAmp[pointer++] = amplitudes[i];
                 if (pointer % fftSampleSize == fftSampleSize_1) {
                     // overlap
-                    i -= backSamples;
+                     i -= backSamples;
                 }
             }
             numSamples = numOverlappedSamples;
@@ -581,4 +672,41 @@ public class MusicReader extends Application {
             }
         }
     }*/
+
+    private static double getFrequencyFromIndex(int index, double samplingFreq, double chunkSize) {
+//        44100 / 1024
+        return index*samplingFreq/chunkSize;
+    }
+
+    private static void drawSpectrogram(SpectrumPoint[][] spectrogram, GraphicsContext gc) {
+        gc.setFill(Color.BLACK);
+        gc.setLineWidth(1);
+//        gc.setStroke(Color.GREEN);
+        SpectrumPoint spectrumPoint;
+        for (int i = 0; i < spectrogram.length; i++) {
+            for (int j = 0; j < spectrogram[i].length; j++) {
+                spectrumPoint = spectrogram[i][j];
+                gc.setStroke(spectrumPoint.color);
+//                gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency, 2, 2);
+                gc.strokeLine(spectrumPoint.time, spectrumPoint.relativeFrequency, spectrumPoint.time, spectrumPoint.relativeFrequency);
+//                System.out.println("DRAWING POINT WITH COORDS " + spectrumPoint.time + " " + spectrumPoint.relativeFrequency + " AND COLOR " + gc.getStroke());
+            }
+        }
+    }
+    
+    private static void drawTimeDomain(byte[] bytes, GraphicsContext gc) {
+        double xCoord = 0;
+        int step = bytes.length/1000;
+//        int step = 1;
+            gc.setFill(Color.BLACK);
+        gc.setStroke(Color.GREEN);
+        gc.setLineWidth(1);
+        for (int i = 0; i < bytes.length-step; i+=step) {
+//        for (int i = 0; i < 1000; i+=step) {
+            gc.strokeLine(xCoord,bytes[i]+127,xCoord+1,bytes[i+step]+127);
+//            System.out.println(bytes[i]);
+            xCoord++;
+        }
+//        gc.strokeLine(0,0,100,50);
+    }
 }
