@@ -24,11 +24,12 @@ public class MusicReader extends Application {
     private static byte[] audio;
     private static Random random = new Random();
     private static final int samplingFreq = 44100; //default sampling frequency
-    private static final int chunkSize = 1024; //size of chunk of data for input to FFT (should be a power of 2)
+    private static final int chunkSize = 2048; //size of chunk of data for input to FFT (should be a power of 2)
     private static final double verticalZoom = 0.004;
-    private static SpectrumPoint[][] spectrogram = new SpectrumPoint[2000][];
-    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
-    private static double sliceBorder = 0.5;
+    private static SpectrumPoint[][] spectrogram = new SpectrumPoint[1000][];
+    private static String fileName = "L's Theme.mp3";
+//    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
+    private static double sliceBorder = 0.9;
 //    private static String fileName = "Fit For Rivals - Crash.mp3";
 
 
@@ -85,7 +86,7 @@ public class MusicReader extends Application {
                 System.err.println(e.toString());
                 System.err.println("AMPLITUDE IS : " + amplitude);
             }
-            return new Color(1,0,0,0);
+            return new Color(0,0,1,1);
         }
 
         private Color getAmplitudeFullColorRepresentation() {
@@ -203,7 +204,7 @@ public class MusicReader extends Application {
             }
             spectrogram[chunks] = spectrum;
             System.out.println("MAX AMPLITUDE INVOLVING PHASE: " + maxAmplitudeInvolvingPhase);
-            System.out.println("MAX AMPLITUDE IN DB: " + spectrum[maxAmplitudeIndex].getAmplitude());
+            System.out.println("MAX AMPLITUDE: " + spectrum[maxAmplitudeIndex].getAmplitude());
             System.out.println("MAX FREQUENCY IN HZ: " + maxFreq);
             System.out.println(fftRes.length);
         }
@@ -687,8 +688,9 @@ public class MusicReader extends Application {
             for (int j = 0; j < spectrogram[i].length; j++) {
                 spectrumPoint = spectrogram[i][j];
                 gc.setStroke(spectrumPoint.color);
-//                gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency, 2, 2);
-                gc.strokeLine(spectrumPoint.time, spectrumPoint.relativeFrequency, spectrumPoint.time, spectrumPoint.relativeFrequency);
+                gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency,
+                        2, 2);
+//                gc.strokeLine(spectrumPoint.time, spectrumPoint.relativeFrequency, spectrumPoint.time, spectrumPoint.relativeFrequency);
 //                System.out.println("DRAWING POINT WITH COORDS " + spectrumPoint.time + " " + spectrumPoint.relativeFrequency + " AND COLOR " + gc.getStroke());
             }
         }
