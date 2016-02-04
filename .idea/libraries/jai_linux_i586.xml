@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="jai_linux-i586">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/jai_linux-i586.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

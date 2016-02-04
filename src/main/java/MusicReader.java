@@ -3,6 +3,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;
 import javafx.stage.Stage;
@@ -24,12 +25,22 @@ public class MusicReader extends Application {
     private static byte[] audio;
     private static Random random = new Random();
     private static final int samplingFreq = 44100; //default sampling frequency
-    private static final int chunkSize = 2048; //size of chunk of data for input to FFT (should be a power of 2)
+    private static final int chunkSize = 512; //size of chunk of data for input to FFT (should be a power of 2)
     private static final double verticalZoom = 0.004;
     private static SpectrumPoint[][] spectrogram = new SpectrumPoint[1000][];
-    private static String fileName = "L's Theme.mp3";
+    private static String fileName = "Star Wars - The Imperial March.mp3";
+//    private static String fileName = "Metallica - Star Wars Imperial March.mp3";
+//    private static String fileName = "L's Theme.mp3";
 //    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
-    private static double sliceBorder = 0.9;
+    private static double sliceBorder = 1.05;
+    private static boolean showOnlyPeaks = true;
+    private static double[] axesFrequencies = {5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000};
+    private static double NyquistFrequency = samplingFreq/2;
+    private static double requiredFrequency = 8000;
+    private static double searchRange = 1000;
+    private static boolean strictSearch = false;
+    private static double maxScaledAmplitude;
+    private static double scaledSliceBorder;
 //    private static String fileName = "Fit For Rivals - Crash.mp3";
 
 
@@ -119,7 +130,30 @@ public class MusicReader extends Application {
     }
 
     public static void main(String[] args) {
-        byte tempBuffer[] = new byte[10000];
+
+        /////////////////////////////////////////////////////////////////////////
+        File file = new File(fileName);
+        AudioInputStream in= null;
+        try {
+            in = AudioSystem.getAudioInputStream(file);
+        } catch (UnsupportedAudioFileException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        AudioInputStream din = null;
+        AudioFormat baseFormat = in.getFormat();
+        AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                baseFormat.getSampleRate(),
+                16,
+                baseFormat.getChannels(),
+                baseFormat.getChannels() * 2,
+                baseFormat.getSampleRate(),
+                false);
+        din = AudioSystem.getAudioInputStream(decodedFormat, in);
+        /////////////////////////////////////////////////////////////////////////
+
+        /*byte tempBuffer[] = new byte[10000];
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         FileInputStream input = null;
 
@@ -163,10 +197,10 @@ public class MusicReader extends Application {
 
 
     //            double[] FFTResult = FFT(cutTheHeader(audio));
-                /*System.out.println("PRINITNG THE FFT RESULT:");
+                *//*System.out.println("PRINITNG THE FFT RESULT:");
                 for (double v : FFTResult) {
                     System.out.print(v + "\t");
-                }*/
+                }*//*
 
 
             int sum = 0;
@@ -178,36 +212,36 @@ public class MusicReader extends Application {
 
 
             Complex[] fftRes = FFT.fft(byteToComplex(currentChunk));
-            /*for (Complex complexNumb : fftRes) {
+            *//*for (Complex complexNumb : fftRes) {
                 System.out.println(complexNumb.toString());
-            }*/
+            }*//*
 
             SpectrumPoint[] spectrum = new SpectrumPoint[fftRes.length];
             double maxAmplitudeInvolvingPhase = 0;
+            double maxAmplitude = 0;
             int maxAmplitudeIndex = 0;
             double maxFreq = 0;
             for (int i = 0; i < fftRes.length; i++) {
                 spectrum[i] = new SpectrumPoint(fftRes[i], i, chunks);
-                /*double amplitudeInvolvingPhase = fftRes[i].getAmplitudeInvolvingPhase(verticalZoom);
+                *//*double amplitudeInvolvingPhase = fftRes[i].getAmplitudeInvolvingPhase(verticalZoom);
     //            System.out.println("Frequency: " + getFrequencyFromIndex(i, samplingFreq, chunkSize) + "; Value: " + fftRes[i].toString());
                 System.out.println("================================\nFrequency: " + getFrequencyFromIndex(i, samplingFreq, chunkSize)
                         + "\nAmplitude: " + fftRes[i].getAmplitude()
-                        +  "\nNormalized Amplitude with Phase: " + amplitudeInvolvingPhase);*/
+                        +  "\nNormalized Amplitude with Phase: " + amplitudeInvolvingPhase);*//*
                 System.out.println(spectrum[i].toString() + "\n=========================\n");
-                if (maxAmplitudeInvolvingPhase < spectrum[i].normalizedAmplitude) {
+//                if (maxAmplitudeInvolvingPhase < spectrum[i].normalizedAmplitude) {
+                if (maxAmplitude < spectrum[i].amplitude) {
                     maxAmplitudeInvolvingPhase = spectrum[i].normalizedAmplitude;
+                    maxAmplitude = spectrum[i].amplitude;
                     maxAmplitudeIndex = i;
-                }
-                if (maxFreq < spectrum[i].frequency) {
-                    maxFreq = spectrum[i].frequency;
                 }
             }
             spectrogram[chunks] = spectrum;
             System.out.println("MAX AMPLITUDE INVOLVING PHASE: " + maxAmplitudeInvolvingPhase);
             System.out.println("MAX AMPLITUDE: " + spectrum[maxAmplitudeIndex].getAmplitude());
-            System.out.println("MAX FREQUENCY IN HZ: " + maxFreq);
+            maxScaledAmplitude = maxAmplitudeInvolvingPhase;
             System.out.println(fftRes.length);
-        }
+        }*/
 
 
 
@@ -281,17 +315,25 @@ public class MusicReader extends Application {
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Music spectral analyzer");
         Group root = new Group();
+        GridPane gridPane = new GridPane();
         //time domain
-        /*Canvas timeDomainCanvas = new Canvas(1000, 255);
+        Canvas timeDomainCanvas = new Canvas(1000, 255);
+        GridPane.setConstraints(timeDomainCanvas,0,0);
         GraphicsContext gc = timeDomainCanvas.getGraphicsContext2D();
         drawTimeDomain(audio,gc);
-        root.getChildren().add(timeDomainCanvas);*/
+        gridPane.getChildren().add(timeDomainCanvas);
+//        root.getChildren().add(timeDomainCanvas);
         //spectrogram
         Canvas spectrogramCanvas = new Canvas(spectrogram.length, chunkSize+1);
+        final int bottom = (int) gridPane.snappedBottomInset();
+        final int top = (int) gridPane.snappedTopInset();
+        spectrogramCanvas.setLayoutY(top);
+        GridPane.setConstraints(timeDomainCanvas,0,1);
         GraphicsContext spectrogramGraphicsContext = spectrogramCanvas.getGraphicsContext2D();
         drawSpectrogram(spectrogram,spectrogramGraphicsContext);
-        root.getChildren().add(spectrogramCanvas);
-        primaryStage.setScene(new Scene(root));
+        gridPane.getChildren().add(spectrogramCanvas);
+//        root.getChildren().add(spectrogramCanvas);
+        primaryStage.setScene(new Scene(gridPane));
         primaryStage.show();
         System.out.println("SPECTROGRAM IS SHOWN");
     }
@@ -679,17 +721,56 @@ public class MusicReader extends Application {
         return index*samplingFreq/chunkSize;
     }
 
+    private static int getIndexFromFrequency(double frequency, double samplingFreq, double chunkSize) {
+        return (int) ( frequency/(samplingFreq/chunkSize));
+    }
+
     private static void drawSpectrogram(SpectrumPoint[][] spectrogram, GraphicsContext gc) {
         gc.setFill(Color.BLACK);
         gc.setLineWidth(1);
-//        gc.setStroke(Color.GREEN);
+        scaledSliceBorder = maxScaledAmplitude*sliceBorder;
+        //axes
+        gc.setStroke(Color.BLACK);
+        gc.strokeRect(0,0,spectrogram.length,chunkSize);
+
+        int[] axesFrequenciesCoords = new int[axesFrequencies.length];
+        for (int i = 0; i < axesFrequenciesCoords.length; i++) {
+            axesFrequenciesCoords[i] = getIndexFromFrequency(axesFrequencies[i], samplingFreq, chunkSize);
+            gc.strokeLine(0,axesFrequenciesCoords[i], 10, axesFrequenciesCoords[i]);
+            gc.strokeText((axesFrequencies[i]/1000) + " kHz", 12, axesFrequenciesCoords[i]);
+        }
+        //marking Nyquist Freequency
+        int NyquistFreqIndex = getIndexFromFrequency(NyquistFrequency, samplingFreq, chunkSize);
+        gc.strokeText("Nyquist Frequency (" + NyquistFrequency + " Hz)", 10, NyquistFreqIndex + 3);
+        gc.setStroke(Color.GREEN);
+        gc.strokeLine(0,NyquistFreqIndex,spectrogram.length,NyquistFreqIndex);
+
+        double topFreqBorder = requiredFrequency+searchRange/2;
+        double bottomFreqBorder = requiredFrequency-searchRange/2;
+
+        //draw spectrogram
+        gc.setStroke(Color.RED);
         SpectrumPoint spectrumPoint;
         for (int i = 0; i < spectrogram.length; i++) {
             for (int j = 0; j < spectrogram[i].length; j++) {
                 spectrumPoint = spectrogram[i][j];
-                gc.setStroke(spectrumPoint.color);
-                gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency,
-                        2, 2);
+                if (showOnlyPeaks) {
+                    if (spectrumPoint.normalizedAmplitude > scaledSliceBorder) {
+                        if (strictSearch) {
+                            if (spectrumPoint.frequency < topFreqBorder && spectrumPoint.frequency > bottomFreqBorder) {
+                                gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency, 5, 5);
+                            }
+                        }
+                        else {
+
+                            gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency, 5, 5);
+                        }
+                    }
+                }
+                else {
+                    gc.setStroke(spectrumPoint.color);
+                    gc.strokeRect(spectrumPoint.time, spectrumPoint.relativeFrequency, 2, 2);
+                }
 //                gc.strokeLine(spectrumPoint.time, spectrumPoint.relativeFrequency, spectrumPoint.time, spectrumPoint.relativeFrequency);
 //                System.out.println("DRAWING POINT WITH COORDS " + spectrumPoint.time + " " + spectrumPoint.relativeFrequency + " AND COLOR " + gc.getStroke());
             }

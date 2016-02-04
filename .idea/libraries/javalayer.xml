@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="javalayer">
+    <CLASSES>
+      <root url="jar:///usr/java/soundshit/javalayer.jar!/" />
+      <root url="jar:///usr/java/soundshit/tritonus_mp3-0.3.6.jar!/" />
+      <root url="jar:///usr/java/soundshit/tritonus_share-0.3.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
