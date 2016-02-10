@@ -12,6 +12,7 @@ import javax.sound.sampled.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -777,7 +778,65 @@ public class MusicAnalyzer extends Application {
             }
         }
     }
-    
+
+
+    public ArrayList<SpectrumPoint> getFingerPrintFromSpectrogram(SpectrumPoint[][] spectrogram, double bottomAmplitudeBorder, double topAmplitudeBorder) {
+        SpectrumPoint spectrumPoint;
+        ArrayList<SpectrumPoint> result = new ArrayList<SpectrumPoint>();
+        for (int i = 0; i < spectrogram.length; i++) {
+            for (int j = 0; j < spectrogram[i].length; j++) {
+                spectrumPoint = spectrogram[i][j];
+                if (spectrumPoint.amplitude < topAmplitudeBorder && spectrumPoint.amplitude > bottomAmplitudeBorder) {
+                       result.add(spectrumPoint);
+                }
+            }
+        }
+        return result;
+    }
+
+    public ArrayList<SpectrumPoint> getFingerPrintFromSpectrogram(SpectrumPoint[][] spectrogram, double bottomAmplitudeBorder) {
+        SpectrumPoint spectrumPoint;
+        ArrayList<SpectrumPoint> result = new ArrayList<SpectrumPoint>();
+        for (int i = 0; i < spectrogram.length; i++) {
+            for (int j = 0; j < spectrogram[i].length; j++) {
+                spectrumPoint = spectrogram[i][j];
+                if (spectrumPoint.amplitude > bottomAmplitudeBorder) {
+                    result.add(spectrumPoint);
+                }
+            }
+        }
+        return result;
+    }
+
+    public ArrayList<SpectrumPoint> getTopPercentsOfAmplitudes(SpectrumPoint[][] spectrogram, double topPercentsAmount) {
+        if (topPercentsAmount < 0 || topPercentsAmount > 1) {
+            System.out.println("topPercentsAmount SHOULD BE BETWEEN 0 AND 1");
+            return null;
+        }
+        SpectrumPoint spectrumPoint;
+        ArrayList<SpectrumPoint> result = new ArrayList<SpectrumPoint>();
+        double sliceBorder = 1 - topPercentsAmount;
+        double maxAmplitude = 0;
+        for (int i = 0; i < spectrogram.length; i++) {
+            for (int j = 0; j < spectrogram[i].length; j++) {
+                spectrumPoint = spectrogram[i][j];
+                if (maxAmplitude < spectrumPoint.amplitude) {
+                    maxAmplitude = spectrumPoint.amplitude;
+                }
+            }
+        }
+        System.out.println("MAX AMPLITUDE : " + maxAmplitude);
+        //REDO
+        for (SpectrumPoint[] spectrumRow : spectrogram) {
+            for (SpectrumPoint point : spectrumRow) {
+                if (point.getAmplitude()/maxAmplitude > sliceBorder) {
+                    result.add(point);
+                }
+            }
+        }
+        return result;
+    }
+
     private static void drawTimeDomain(byte[] bytes, GraphicsContext gc) {
         double xCoord = 0;
         int step = bytes.length/1000;
