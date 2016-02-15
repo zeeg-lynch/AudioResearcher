@@ -31,10 +31,13 @@ public class MusicAnalyzer extends Application {
     private static SpectrumPoint[][] spectrogram = new SpectrumPoint[1000][];
 //    private static String fileName = "Star Wars - The Imperial March.mp3";
 //    private static String fileName = "Metallica - Star Wars Imperial March.mp3";
-    private static String fileName = "Fit For Rivals - Crash.mp3";
+//    private static String fileName = "Fit For Rivals - Crash.mp3";
+//    private static String fileName = "Fit For Rivals - CrashWithoutTags.mp3";
+    private static String fileName = "Moby - Enter the matrixWithoutTags.mp3";
+//    private static String fileName = "Moby - Enter the matrix.mp3";
 //    private static String fileName = "L's Theme.mp3";
 //    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
-    private static double sliceBorder = 1.0;
+    private static double sliceBorder = 1.05;
     private static boolean showOnlyPeaks = true;
     private static double[] axesFrequencies = {5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000};
     private static double NyquistFrequency = samplingFreq/2;
@@ -134,49 +137,7 @@ public class MusicAnalyzer extends Application {
     public static void main(String[] args) {
 
         /////////////////////////////////////////////////////////////////////////
-        File file = new File(fileName);
-        AudioInputStream in= null;
-        try {
-            in = AudioSystem.getAudioInputStream(file);
-        } catch (UnsupportedAudioFileException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        AudioInputStream din = null;
-        AudioFormat baseFormat = in.getFormat();
-        AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                baseFormat.getSampleRate(),
-                16,
-                baseFormat.getChannels(),
-                baseFormat.getChannels() * 2,
-                baseFormat.getSampleRate(),
-                false);
-        din = AudioSystem.getAudioInputStream(decodedFormat, in);
-        /////////////////////////////////////////////////////////////////////////
-
-        byte tempBuffer[] = new byte[10000];
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        FileInputStream input = null;
-
-        File mp3 = new File(fileName);
-        try {
-                input = new FileInputStream(mp3);
-            int len;
-            while((len = input.read(tempBuffer)) > 0) {
-                out.write(tempBuffer, 0, len);
-            }
-
-            out.close();
-            input.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // FFT code below ...
-        audio = out.toByteArray();
+        audio = getAudioByteStream(fileName);
         // ...
 
 //        for (byte b : audio) {
@@ -292,6 +253,52 @@ public class MusicAnalyzer extends Application {
 
     }
 
+    public static byte[] getAudioByteStream(String fileName) {
+        File file = new File(fileName);
+        AudioInputStream in= null;
+        try {
+            in = AudioSystem.getAudioInputStream(file);
+        } catch (UnsupportedAudioFileException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        AudioInputStream din = null;
+        AudioFormat baseFormat = in.getFormat();
+        AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                baseFormat.getSampleRate(),
+                16,
+                baseFormat.getChannels(),
+                baseFormat.getChannels() * 2,
+                baseFormat.getSampleRate(),
+                false);
+        din = AudioSystem.getAudioInputStream(decodedFormat, in);
+        /////////////////////////////////////////////////////////////////////////
+
+        byte tempBuffer[] = new byte[10000];
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FileInputStream input = null;
+
+        File mp3 = new File(fileName);
+        try {
+                input = new FileInputStream(mp3);
+            int len;
+            while((len = input.read(tempBuffer)) > 0) {
+                out.write(tempBuffer, 0, len);
+            }
+
+            out.close();
+            input.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // FFT code below ...
+        audio = out.toByteArray();
+        return audio;
+    }
 
 
     private static Complex[] doubleToComplex(double[] array) {
@@ -316,7 +323,6 @@ public class MusicAnalyzer extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Music spectral analyzer");
-        Group root = new Group();
         GridPane gridPane = new GridPane();
         //time domain
         Canvas timeDomainCanvas = new Canvas(1000, 255);
@@ -338,6 +344,8 @@ public class MusicAnalyzer extends Application {
         primaryStage.setScene(new Scene(gridPane));
         primaryStage.show();
         System.out.println("SPECTROGRAM IS SHOWN");
+        ArrayList<SpectrumPoint> fingerPrintFromSpectrogram = getFingerPrintFromSpectrogram(spectrogram, 0.61);
+        System.out.println("FINGERPRINT SIZE: " + fingerPrintFromSpectrogram.size());
     }
 
     static double[] readFully(File file)
@@ -800,7 +808,7 @@ public class MusicAnalyzer extends Application {
         for (int i = 0; i < spectrogram.length; i++) {
             for (int j = 0; j < spectrogram[i].length; j++) {
                 spectrumPoint = spectrogram[i][j];
-                if (spectrumPoint.amplitude > bottomAmplitudeBorder) {
+                if (spectrumPoint.normalizedAmplitude > bottomAmplitudeBorder) {
                     result.add(spectrumPoint);
                 }
             }

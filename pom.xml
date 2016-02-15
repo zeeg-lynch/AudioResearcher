@@ -35,7 +35,11 @@
             <version>1.9.5-1</version>
         </dependency>
 
-
+        <dependency>
+            <groupId>com.mpatric</groupId>
+            <artifactId>mp3agic</artifactId>
+            <version>0.8.3</version>
+        </dependency>
 
     </dependencies>
 
