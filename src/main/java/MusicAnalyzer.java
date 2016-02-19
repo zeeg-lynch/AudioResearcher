@@ -4,6 +4,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -29,7 +30,7 @@ public class MusicAnalyzer extends Application {
     private static byte[] audio;
     private static Random random = new Random();
     private static final int samplingFreq = 44100; //default sampling frequency
-    private static final int chunkSize = 256; //size of chunk of data for input to FFT (should be a power of 2)
+    private static final int chunkSize = 512; //size of chunk of data for input to FFT (should be a power of 2)
     private static final double verticalZoom = 0.004;
     private static SpectrumPoint[][] spectrogram = new SpectrumPoint[1000][];
 //    private static String fileName = "Star Wars - The Imperial March.mp3";
@@ -40,7 +41,7 @@ public class MusicAnalyzer extends Application {
 //    private static String fileName = "Moby - Enter the matrix.mp3";
 //    private static String fileName = "L's Theme.mp3";
 //    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
-    private static double sliceBorder = 1.05;
+    private static double sliceBorder = 0.95;
     private static boolean showOnlyPeaks = true;
     private static double[] axesFrequencies = {5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000};
     private static double NyquistFrequency = samplingFreq/2;
@@ -329,7 +330,7 @@ public class MusicAnalyzer extends Application {
         GridPane gridPane = new GridPane();
         //time domain
         Canvas timeDomainCanvas = new Canvas(1000, 255);
-        GridPane.setConstraints(timeDomainCanvas,0,3,20,1);
+        GridPane.setConstraints(timeDomainCanvas,0,4,20,1);
         GraphicsContext gc = timeDomainCanvas.getGraphicsContext2D();
         drawTimeDomain(audio,gc);
         gridPane.getChildren().add(timeDomainCanvas);
@@ -347,6 +348,16 @@ public class MusicAnalyzer extends Application {
         GridPane.setConstraints(bottomFreqBorder,1,1);
         TextField topFreqBorder = new TextField("9000");
         GridPane.setConstraints(topFreqBorder,3,1);
+
+        Label topAmplBordLabel = new Label(" Top amplitude border: ");
+        GridPane.setConstraints(topAmplBordLabel,2,3);
+        Label botAmplBordLabel = new Label(" Bottom amplitude border: ");
+        GridPane.setConstraints(botAmplBordLabel,0,3);
+        TextField bottomAmplBorder = new TextField("");
+        GridPane.setConstraints(bottomAmplBorder,1,3);
+        TextField topAmplBorder = new TextField("");
+        GridPane.setConstraints(topAmplBorder,3,3);
+
         Label songNameLabel = new Label(" Song name: ");
         GridPane.setConstraints(songNameLabel,5,1);
         TextField songNameField = new TextField("Fit For Rivals - Crash.mp3");
@@ -360,7 +371,11 @@ public class MusicAnalyzer extends Application {
         TextField matchAmount = new TextField("20");
         GridPane.setConstraints(matchAmount,3,2);
         Button searchButton = new Button("Search");
-        GridPane.setConstraints(searchButton,6,2);
+        GridPane.setConstraints(searchButton,6,3);
+
+        CheckBox checkBox = new CheckBox("Time-independent search");
+        checkBox.setSelected(true);
+        GridPane.setConstraints(checkBox,5,2);
 
 
         GridPane.setConstraints(spectrogramCanvas,0,0,20,1);
@@ -370,14 +385,21 @@ public class MusicAnalyzer extends Application {
         gridPane.getChildren().add(topFreqBordLabel);
         gridPane.getChildren().add(topFreqBorder);
         gridPane.getChildren().add(botFreqBordLabel);
+        gridPane.getChildren().add(bottomFreqBorder);
+
+        gridPane.getChildren().add(topAmplBordLabel);
+        gridPane.getChildren().add(topAmplBorder);
+        gridPane.getChildren().add(botAmplBordLabel);
+        gridPane.getChildren().add(bottomAmplBorder);
+
         gridPane.getChildren().add(songNameLabel);
         gridPane.getChildren().add(songNameField);
-        gridPane.getChildren().add(bottomFreqBorder);
         gridPane.getChildren().add(amplPercentageLabel);
         gridPane.getChildren().add(amplPercentage);
         gridPane.getChildren().add(matchAmountLabel);
         gridPane.getChildren().add(matchAmount);
         gridPane.getChildren().add(searchButton);
+        gridPane.getChildren().add(checkBox);
 //        gridPane.getChildren().add(bottomFreqBorder);
 //        gridPane.getChildren().add(spectrogramCanvas);
 //        root.getChildren().add(spectrogramCanvas);
