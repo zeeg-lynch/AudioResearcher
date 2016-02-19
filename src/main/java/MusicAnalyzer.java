@@ -3,6 +3,9 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;
@@ -26,14 +29,14 @@ public class MusicAnalyzer extends Application {
     private static byte[] audio;
     private static Random random = new Random();
     private static final int samplingFreq = 44100; //default sampling frequency
-    private static final int chunkSize = 512; //size of chunk of data for input to FFT (should be a power of 2)
+    private static final int chunkSize = 256; //size of chunk of data for input to FFT (should be a power of 2)
     private static final double verticalZoom = 0.004;
     private static SpectrumPoint[][] spectrogram = new SpectrumPoint[1000][];
 //    private static String fileName = "Star Wars - The Imperial March.mp3";
 //    private static String fileName = "Metallica - Star Wars Imperial March.mp3";
-//    private static String fileName = "Fit For Rivals - Crash.mp3";
+    private static String fileName = "Fit For Rivals - Crash.mp3";
 //    private static String fileName = "Fit For Rivals - CrashWithoutTags.mp3";
-    private static String fileName = "Moby - Enter the matrixWithoutTags.mp3";
+//    private static String fileName = "Moby - Enter the matrixWithoutTags.mp3";
 //    private static String fileName = "Moby - Enter the matrix.mp3";
 //    private static String fileName = "L's Theme.mp3";
 //    private static String fileName = "John Murphy - Don Abandons Alice (OST 28 Weeks Later).mp3";
@@ -41,9 +44,9 @@ public class MusicAnalyzer extends Application {
     private static boolean showOnlyPeaks = true;
     private static double[] axesFrequencies = {5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000};
     private static double NyquistFrequency = samplingFreq/2;
-    private static double requiredFrequency = 8000;
-    private static double searchRange = 1000;
-    private static boolean strictSearch = false;
+    private static double requiredFrequency = 10000;
+    private static double searchRange = 5000;
+    private static boolean strictSearch = true;
     private static double maxScaledAmplitude;
     private static double scaledSliceBorder;
 //    private static String fileName = "Fit For Rivals - Crash.mp3";
@@ -326,7 +329,7 @@ public class MusicAnalyzer extends Application {
         GridPane gridPane = new GridPane();
         //time domain
         Canvas timeDomainCanvas = new Canvas(1000, 255);
-        GridPane.setConstraints(timeDomainCanvas,0,0);
+        GridPane.setConstraints(timeDomainCanvas,0,3,20,1);
         GraphicsContext gc = timeDomainCanvas.getGraphicsContext2D();
         drawTimeDomain(audio,gc);
         gridPane.getChildren().add(timeDomainCanvas);
@@ -336,10 +339,47 @@ public class MusicAnalyzer extends Application {
         final int bottom = (int) gridPane.snappedBottomInset();
         final int top = (int) gridPane.snappedTopInset();
         spectrogramCanvas.setLayoutY(top);
-        GridPane.setConstraints(timeDomainCanvas,0,1);
+        Label topFreqBordLabel = new Label(" Top frequency border: ");
+        GridPane.setConstraints(topFreqBordLabel,2,1);
+        Label botFreqBordLabel = new Label(" Bottom frequency border: ");
+        GridPane.setConstraints(botFreqBordLabel,0,1);
+        TextField bottomFreqBorder = new TextField("7000");
+        GridPane.setConstraints(bottomFreqBorder,1,1);
+        TextField topFreqBorder = new TextField("9000");
+        GridPane.setConstraints(topFreqBorder,3,1);
+        Label songNameLabel = new Label(" Song name: ");
+        GridPane.setConstraints(songNameLabel,5,1);
+        TextField songNameField = new TextField("Fit For Rivals - Crash.mp3");
+        GridPane.setConstraints(songNameField,6,1);
+        Label amplPercentageLabel = new Label(" Amplitude percentage: ");
+        GridPane.setConstraints(amplPercentageLabel,0,2);
+        TextField amplPercentage = new TextField("85");
+        GridPane.setConstraints(amplPercentage,1,2);
+        Label matchAmountLabel = new Label(" Points amount to match: ");
+        GridPane.setConstraints(matchAmountLabel,2,2);
+        TextField matchAmount = new TextField("20");
+        GridPane.setConstraints(matchAmount,3,2);
+        Button searchButton = new Button("Search");
+        GridPane.setConstraints(searchButton,6,2);
+
+
+        GridPane.setConstraints(spectrogramCanvas,0,0,20,1);
         GraphicsContext spectrogramGraphicsContext = spectrogramCanvas.getGraphicsContext2D();
         drawSpectrogram(spectrogram,spectrogramGraphicsContext);
         gridPane.getChildren().add(spectrogramCanvas);
+        gridPane.getChildren().add(topFreqBordLabel);
+        gridPane.getChildren().add(topFreqBorder);
+        gridPane.getChildren().add(botFreqBordLabel);
+        gridPane.getChildren().add(songNameLabel);
+        gridPane.getChildren().add(songNameField);
+        gridPane.getChildren().add(bottomFreqBorder);
+        gridPane.getChildren().add(amplPercentageLabel);
+        gridPane.getChildren().add(amplPercentage);
+        gridPane.getChildren().add(matchAmountLabel);
+        gridPane.getChildren().add(matchAmount);
+        gridPane.getChildren().add(searchButton);
+//        gridPane.getChildren().add(bottomFreqBorder);
+//        gridPane.getChildren().add(spectrogramCanvas);
 //        root.getChildren().add(spectrogramCanvas);
         primaryStage.setScene(new Scene(gridPane));
         primaryStage.show();
